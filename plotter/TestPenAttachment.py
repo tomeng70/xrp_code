@@ -5,6 +5,10 @@ from XRPLib.defaults import *
 # See https://www.printables.com/model/924143-line-plotter-kit-for-xrp-robot
 # for details on the line plotter kit.
 
+# note that it seems that a standard sized servo can draw enough current to
+# brownout the XRP system. to avoid this situation, avoid large changes in 
+# position (i.e., avoid sudden large changes in servo angle).
+
 # init global variables
 previous_button_state = 0
 UP_POS = 150
