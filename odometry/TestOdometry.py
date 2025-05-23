@@ -38,14 +38,9 @@ prev_count_right = motor_right.get_position_counts()
 # initial pose.
 pose = Pose(0, 0, 0)
 
-# main method.
-
+# main code.
 start_time = time.time_ns()
 while True:
-    # what is the elapsed time?
-    current_time = time.time_ns()
-    elapsed_time = current_time - start_time
-    
     # get distance traveled by left and right wheels.
     curr_count_left = motor_left.get_position_counts()
     curr_count_right = motor_right.get_position_counts()
@@ -54,8 +49,19 @@ while True:
     dist_left = (curr_count_left - prev_count_left) / counts_per_rev * wheel_circumference
     dist_right = (curr_count_right - prev_count_right) / counts_per_rev * wheel_circumference
     
+    # calculate distance traveled by center point.
+    dist_avg = (dist_left + dist_right) / 2.0
+    
     # calculate change in angle.
     delta_theta = (dist_right - dist_left) / (2.0 * wheel_spacing)
+    
+     # calculate changes in position.
+    delta_x = dist_avg * math.cos(pose.theta + delta_theta / 2.0) / 2.0
+    delta_y = dist_avg * math.sin(pose.theta + delta_theta / 2.0) / 2.0
+    
+    # update position.
+    pose.x += delta_x
+    pose.y += delta_y
     
     # update angle.
     pose.theta += delta_theta
@@ -65,7 +71,4 @@ while True:
     prev_count_left = curr_count_left
     prev_count_right = curr_count_right
     
-    # display info.
-    print(f"theta: {pose.theta:.2f} rad ({pose.theta / math.pi * 180.0 : .2f} deg)")
-    
-    
+    print(f"{pose.x: 5.1f} cm, {pose.y: 5.1f} cm, {pose.theta / math.pi * 180.0 : 5.1f} deg")
