@@ -17,11 +17,11 @@ motor_left = EncodedMotor.get_default_encoded_motor(1)
 motor_right = EncodedMotor.get_default_encoded_motor(2)
 drive = DifferentialDrive.get_default_differential_drive()
 
+start_time = 0
+current_time = 0
+delta_time = 0
+
 # initial pose.
 pose = Pose(0, 0, 0)
 
 # main method.
-def main():
-    print("main")
-    
-main()
