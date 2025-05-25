@@ -43,18 +43,15 @@ current_state = IDLE
 pose = Pose(0, 0, 0)
 
 # path (x, y, coordinates are specified in cm)
-# path = [[30, 0],
-#         [30, 30],
-#         [0, 30],
-#         [0, 0]]
-        
-path = [[100,100]]
-
 index_path = 0
+path = [[50, 0],
+        [50, 50],
+        [0, 50],
+        [0, 0]]
 
 # correction constants
 KP_DIST = 8
-KP_ANGLE = 22
+KP_ANGLE = 23
 
 def update_pose():
     # global variables modified by this function.
@@ -89,6 +86,69 @@ def update_pose():
     prev_count_left = curr_count_left
     prev_count_right = curr_count_right
     
+# calculate the angle and distance to target waypoint.
+def calculate_offset():
+    # calculate x and y error values.
+    x_target = waypoint[0]
+    y_target = waypoint[1]
+    x_err = x_target - pose.x
+    y_err = y_target - pose.y
+    
+    # calculate the angle from the robot to the target waypoint
+    angle_to_target = math.atan2(y_err, x_err)
+    
+    # calculate the difference between the angle to the target and the pose angle.
+    offset_angle = angle_to_target - pose.theta
+    
+    # calculate distance from bot to the target waypoint
+    dist_to_tgt = math.sqrt(x_err ** 2 + y_err ** 2)
+    
+    return [dist_to_tgt, offset_angle]
+    
+def apply_correction(offset):
+    # extract values from list.
+    dist_to_tgt = offset[0]
+    offset_angle = offset[1]
+    
+    # express the angular error as a ratio.
+    error_angle = math.atan2(math.sin(offset_angle), math.cos(offset_angle))
+    
+    # calculate the correction velocity.
+    if (dist_to_tgt > 20):
+        error_vel = 40
+    elif (dist_to_tgt > 10):
+        error_vel = 30
+    else:
+        error_vel = 20
+        
+    # calculate desired rotational and linear velocities of the robot.
+    omega = KP_ANGLE * error_angle
+    vel_B = KP_DIST * error_vel
+    
+    # convert to input motor velocities (angular).
+    theta_dot_L = vel_B / wheel_radius - wheel_spacing / (2.0 * wheel_radius) * omega
+    theta_dot_R = vel_B / wheel_radius + wheel_spacing / (2.0 * wheel_radius) * omega
+    
+    # limit motor speed
+    MAX_SPEED = 90
+    if theta_dot_L > MAX_SPEED:
+        theta_dot_L = MAX_SPEED
+    elif theta_dot_L < -MAX_SPEED:
+        theta_dot_L = -MAX_SPEED
+        
+    if theta_dot_R > MAX_SPEED:
+        theta_dot_R = MAX_SPEED
+    elif theta_dot_R < -MAX_SPEED:
+        theta_dot_R = -MAX_SPEED
+    
+    # apply correction.
+    motor_left.set_speed(theta_dot_L)
+    motor_right.set_speed(theta_dot_R)
+    
+def stop():
+    motor_left.set_speed(0)
+    motor_right.set_speed(0)
+    
 # main code.
 # wait for button press.
 print("Flashing LED")
@@ -101,78 +161,22 @@ print("Running program...")
 board.led_blink(2)
 
 # get waypoint
-waypoint = path[0]
+waypoint = [100,100]
 
 while True:
     # update the pose of the robot.
     update_pose()
-  
-    # calculate x and y error values.
-    x_target = waypoint[0]
-    y_target = waypoint[1]
-    x_err = x_target - pose.x
-    y_err = y_target - pose.y
     
-    # calculate the angle from the robot to the target waypoint
-    angle_to_target = math.atan2(y_err, x_err)
-    
-    # calculate the difference between the angle to the target and the pose angle.
-    theta_err = angle_to_target - pose.theta
-    
-    # express the error as a ratio.
-    error_angle = math.atan2(math.sin(theta_err), math.cos(theta_err))
-    
-    # calculate distance from bot to the target waypoint
-    dist_to_tgt = math.sqrt(x_err ** 2 + y_err ** 2)
-    
-    # calculate the correction velocity.
-    if (abs(theta_err) > 0.25):
-        # focus on correcting angle before correcting distance.
-        error_vel = 0
-    elif (dist_to_tgt > 20):
-        error_vel = 40
-    elif (dist_to_tgt > 10):
-        error_vel = 30
-    else:
-        error_vel = 20
-    
-    # print(f"theta_err: {theta_err}, dist_to_tgt: {dist_to_tgt}")
-    # print(f"error_angle: {error_angle}, error_vel: {error_vel}")
-    # print(f"{pose.x: 5.1f} cm, {pose.y: 5.1f} cm, {pose.theta / math.pi * 180.0 : 5.1f} deg")
-    
-    #
-    
-    if (dist_to_tgt < 3):
-        print("done")
-        theta_dot_L = 0
-        theta_dot_R = 0
-        board.led_blink(0.5)
-    else:
-        omega = KP_ANGLE * error_angle
-        vel_B = KP_DIST * error_vel
-        theta_dot_L = vel_B / wheel_radius - wheel_spacing / (2.0 * wheel_radius) * omega
-        theta_dot_R = vel_B / wheel_radius + wheel_spacing / (2.0 * wheel_radius) * omega
-        
-    # limit speed
-    MAX_SPEED = 90
-    if theta_dot_L > MAX_SPEED:
-        theta_dot_L = MAX_SPEED
-    elif theta_dot_L < -MAX_SPEED:
-        theta_dot_L = -MAX_SPEED
-        
-    if theta_dot_R > MAX_SPEED:
-        theta_dot_R = MAX_SPEED
-    elif theta_dot_R < -MAX_SPEED:
-        theta_dot_R = -MAX_SPEED
-    
-    motor_left.set_speed(theta_dot_L)
-    motor_right.set_speed(theta_dot_R)
-    
-    # print(f"theta_dot_L, theta_dot_R: {theta_dot_L}, {theta_dot_R}")
-    
-    
-    #     theta_err = angle_to_target - pose.theta
+    # how far are we from the target waypoint?
+    offset = calculate_offset()
 
+    # are we at the target waypoint?
+    if (offset[0] < 3):
+        stop()
+        print("done!")
+        board.led_on()
+    else:
+        apply_correction(offset)
     
     # # what is our state?
     # if (current_state == IDLE):
