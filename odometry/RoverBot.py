@@ -41,25 +41,53 @@ IDLE = 0
 TURNING = 1
 NAVIGATING = 2
 
-# keep track of the state of the robot.
-current_state = IDLE
+def get_path():
+    # dimensions (in cm)
+    SIDE = 100.0
+    
+    # trace the edges of the path.
+    path = [
+        [SIDE, 0],
+        [SIDE, SIDE],
+        [0, SIDE],
+        [0, 0],
+        
+        [SIDE - 20, 20],
+        [SIDE - 20, SIDE - 20],
+        [20, SIDE - 20],
+        [20, 20],
 
-# initial pose.
-pose = Pose(0, 0, 0)
-
-# path (x, y, coordinates are specified in cm)
-index_path = 0
-path = [[100, 0],
-        [100, 100],
-        [0, 100],
-        [0, 0]]
-
-# correction constants
-KP_DIST = 8
-KP_ANGLE = 23
-
-
-
+        [SIDE - 40, 40],
+        [SIDE - 40, SIDE - 40],
+        [40, SIDE - 40],
+        [40, 40]
+        
+        ]
+        
+    
+    # # loop and generate columns
+    # num_cols = math.floor(SIDE /  25 )
+    # print(num_cols)
+    # COLUMN = SIDE / num_cols 
+    
+    # for i in range (0, num_cols):
+    #     # what was previous points y position.
+    #     previous_y = path[len(path) - 1][1]
+    #     new_x = (i + 1) *  COLUMN
+    #     if (previous_y == 0):
+    #         if (i == 0):
+    #             # for the initial column, start at the same
+    #             # position as the previous waypoint
+    #             new_y = 0
+    #         else:
+    #             new_y = SIDE
+    #     else:
+    #         new_y = 0
+    #     path.append([new_x, new_y])
+        
+    # return path
+    return path
+    
 def update_pose():
     # global variables modified by this function.
     global prev_count_left, prev_count_right
@@ -160,6 +188,20 @@ def stop():
     motor_right.set_speed(0)
     
 # main code.
+# keep track of the state of the robot.
+current_state = IDLE
+
+# initial pose.
+pose = Pose(0, 0, 0)
+
+# path (x, y, coordinates are specified in cm)
+index_path = 0
+path = get_path()
+print ("path:", path)
+
+# correction constants
+KP_DIST = 8
+KP_ANGLE = 18
 # wait for button press.
 print("Flashing LED")
 board.led_blink(6)
@@ -170,6 +212,12 @@ board.wait_for_button()
 print("Running program...")
 board.led_blink(2)
 
+imu.reset_yaw()
+
+wait_flag = False
+wait_count = 0
+WAIT_ITERATIONS = 100
+
 while True:
     # update the pose of the robot.
     update_pose()
@@ -177,23 +225,30 @@ while True:
     # what is our state?
     # print("debug: state =", current_state)
     if (current_state == IDLE):
-        # print("debug: in IDLE")
-        # Are there any waypoints left in the path?
-        if (index_path < len(path)):
-            # get the next waypoint
-            waypoint = path[index_path]
-            print("navigating to", waypoint)
-            current_state = NAVIGATING
+        # should we wait?
+        if(wait_flag):
+            print("Waiting")
+            wait_count += 1
+            if (wait_count > WAIT_ITERATIONS):
+                wait_flag = 0;
         else:
-            print("IDLE with no waypoints left.")
-            board.led_blink(1)
+            # print("debug: in IDLE")
+            # Are there any waypoints left in the path?
+            if (index_path < len(path)):
+                # get the next waypoint
+                waypoint = path[index_path]
+                print("navigating to", waypoint)
+                current_state = NAVIGATING
+            else:
+                print("IDLE with no waypoints left.")
+                board.led_blink(1)
     elif (current_state == NAVIGATING):
         # print("debug: in NAVIGATING")
          # how far are we from the target waypoint?
         offset = calculate_offset()
     
         # are we at the target waypoint?
-        if (offset[0] < 3):
+        if (offset[0] < 10):
             # stop bot
             stop()
             
@@ -202,6 +257,11 @@ while True:
             
             print("done!")
             current_state = IDLE
+            
+            # set wait flag to wait after reaching waypoint.
+            wait_flag = True
+            wait_count = 0
+            
             # print("debug: sleep for a moment")
             # time.sleep(1)
             # print("debug: awake!")
