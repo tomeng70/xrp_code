@@ -1,6 +1,7 @@
 from XRPLib.board import Board
 from XRPLib.encoded_motor import EncodedMotor
 from XRPLib.differential_drive import DifferentialDrive
+from XRPLib.imu import IMU
 import time
 import math
 
@@ -17,6 +18,10 @@ board = Board.get_default_board()
 motor_left = EncodedMotor.get_default_encoded_motor(1)
 motor_right = EncodedMotor.get_default_encoded_motor(2)
 drive = DifferentialDrive.get_default_differential_drive()
+
+imu = IMU.get_default_imu()
+imu.calibrate(1)
+imu.reset_yaw()
 
 # geometry of differential drive.
 # distances are in cm.
@@ -53,6 +58,8 @@ path = [[75, 0],
 KP_DIST = 8
 KP_ANGLE = 23
 
+
+
 def update_pose():
     # global variables modified by this function.
     global prev_count_left, prev_count_right
@@ -80,7 +87,10 @@ def update_pose():
     pose.y += delta_y
     
     # update angle.
-    pose.theta += delta_theta
+    # pose.theta += delta_theta
+    
+    # use IMU for angle.
+    pose.theta = math.radians(imu.get_heading())
     
     # update values for next iteration
     prev_count_left = curr_count_left
