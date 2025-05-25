@@ -49,9 +49,9 @@ pose = Pose(0, 0, 0)
 
 # path (x, y, coordinates are specified in cm)
 index_path = 0
-path = [[75, 0],
-        [75, 75],
-        [0, 75],
+path = [[100, 0],
+        [100, 100],
+        [0, 100],
         [0, 0]]
 
 # correction constants
