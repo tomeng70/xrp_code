@@ -44,9 +44,9 @@ pose = Pose(0, 0, 0)
 
 # path (x, y, coordinates are specified in cm)
 index_path = 0
-path = [[50, 0],
-        [50, 50],
-        [0, 50],
+path = [[75, 0],
+        [75, 75],
+        [0, 75],
         [0, 0]]
 
 # correction constants
@@ -160,98 +160,41 @@ board.wait_for_button()
 print("Running program...")
 board.led_blink(2)
 
-# get waypoint
-waypoint = [100,100]
-
 while True:
     # update the pose of the robot.
     update_pose()
     
-    # how far are we from the target waypoint?
-    offset = calculate_offset()
-
-    # are we at the target waypoint?
-    if (offset[0] < 3):
-        stop()
-        print("done!")
-        board.led_on()
-    else:
-        apply_correction(offset)
+    # what is our state?
+    # print("debug: state =", current_state)
+    if (current_state == IDLE):
+        # print("debug: in IDLE")
+        # Are there any waypoints left in the path?
+        if (index_path < len(path)):
+            # get the next waypoint
+            waypoint = path[index_path]
+            print("navigating to", waypoint)
+            current_state = NAVIGATING
+        else:
+            print("IDLE with no waypoints left.")
+            board.led_blink(1)
+    elif (current_state == NAVIGATING):
+        # print("debug: in NAVIGATING")
+         # how far are we from the target waypoint?
+        offset = calculate_offset()
     
-    # # what is our state?
-    # if (current_state == IDLE):
-    #     # Are there any waypoints left in the path?
-    #     if (index_path < len(path)):
-    #         waypoint = path[index_path]
-    #         print("navigating to", waypoint)
-    #         current_state = NAVIGATING
-    #     else:
-    #         print("IDLE with no waypoints left.")
-    # elif (current_state == NAVIGATING):
-    #     # calculate differences
-    #     x_target = waypoint[0]
-    #     y_target = waypoint[1]
-    #     x_err = x_target - pose.x
-    #     y_err = y_target - pose.y
+        # are we at the target waypoint?
+        if (offset[0] < 3):
+            # stop bot
+            stop()
+            
+            # update index
+            index_path += 1
+            
+            print("done!")
+            current_state = IDLE
+            # print("debug: sleep for a moment")
+            # time.sleep(1)
+            # print("debug: awake!")
+        else:
+            apply_correction(offset)
         
-    #     # what is the angle to the target?
-    #     #angle_to_target = math.arctan2(y_err, x_err)
-    #     angle_to_target = math.atan2(y_err, x_err)
-    #     theta_err = angle_to_target - pose.theta
-        
-    #     # what is distance to target?
-    #     distance_to_target = math.sqrt(x_err ** 2 + y_err ** 2)
-        
-    #     print("theta_err: ", theta_err)
-    #     print("distance_to_target: ", distance_to_target);
-    #     print("")
-        
-    #     # check to see if we are close enough to waypoint.
-    #     if (distance_to_target < 5):
-    #         # we navigated to waypoint.
-    #         print("navigated to waypoint:", waypoint)
-    #         index_path = index_path + 1
-    #         motor_left.set_speed(0)
-    #         motor_right.set_speed(0)
-    #         current_state = IDLE
-    #     else:
-    #         # compute the correction values.
-    #         correction_angle = KP_ANGLE * theta_err
-    #         if (abs(theta_err) > 1000):
-    #             # turn only if we're really misaligned.
-    #             correction_distance = 0;
-    #         else:
-    #             # correction_distance = KP_DIST * distance_to_target
-    #             if (distance_to_target > 20):
-    #                 correction_distance = 0.6
-    #             elif (distance_to_target > 10):
-    #                 correction_distance = 0.4
-    #             elif (distance_to_target > 5):
-    #                 correction_distance = 0.3
-    #             else:
-    #                 correction_distance = 0.2
-                    
-    #         # phi_dot_L = correction_distance / wheel_radius - wheel_spacing * correction_angle / (2.0 * wheel_radius)
-    #         # phi_dot_R = correction_distance / wheel_radius + wheel_spacing * correction_angle / (2.0 * wheel_radius)
-            
-    #         phi_dot_L = correction_distance
-    #         phi_dot_R = correction_distance
-            
-    #         # todo: limit speed here.
-    #         if (phi_dot_L > 1):
-    #             phi_dot_L = 1
-    #         elif (phi_dot_L < -1):
-    #             phi_dot_L = -1
-                
-    #         if (phi_dot_R > 1):
-    #             phi_dot_R = 1
-    #         elif (phi_dot_R < -1):
-    #             phi_dot_R = -1
-            
-            
-    #         # adjust motor speeds
-    #         motor_left.set_effort(phi_dot_L)
-    #         motor_right.set_effort(phi_dot_R)
-            
-    #         print(f"{phi_dot_L}, {phi_dot_R}")
-    # print(f"{pose.x: 5.1f} cm, {pose.y: 5.1f} cm, {pose.theta / math.pi * 180.0 : 5.1f} deg")
