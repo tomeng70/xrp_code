@@ -47,20 +47,21 @@ def get_path():
     
     # trace the edges of the path.
     path = [
-        [SIDE, 0],
-        [SIDE, SIDE],
-        [0, SIDE],
-        [0, 0],
+        [SIDE, 0]
         
-        [SIDE - 20, 20],
-        [SIDE - 20, SIDE - 20],
-        [20, SIDE - 20],
-        [20, 20],
+        # [SIDE, SIDE],
+        # [0, SIDE],
+        # [0, 0],
+        
+        # [SIDE - 20, 20],
+        # [SIDE - 20, SIDE - 20],
+        # [20, SIDE - 20],
+        # [20, 20],
 
-        [SIDE - 40, 40],
-        [SIDE - 40, SIDE - 40],
-        [40, SIDE - 40],
-        [40, 40]
+        # [SIDE - 40, 40],
+        # [SIDE - 40, SIDE - 40],
+        # [40, SIDE - 40],
+        # [40, 40]
         
         ]
         
