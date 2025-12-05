@@ -27,9 +27,9 @@ wheel_spacing = 15.5
 counts_per_rev = 585.0
 wheel_circumference = 2.0 * math.pi * wheel_radius
 
-start_time = 0
+prev_time = 0
 current_time = 0
-delta_time = 0
+elapsed_time = 0
 
 prev_count_left = motor_left.get_position_counts()
 prev_count_right = motor_right.get_position_counts()
@@ -39,7 +39,7 @@ prev_count_right = motor_right.get_position_counts()
 pose = Pose(0, 0, 0)
 
 # main code.
-start_time = time.time_ns()
+prev_time = time.time_ns()
 while True:
     # get distance traveled by left and right wheels.
     curr_count_left = motor_left.get_position_counts()
@@ -67,8 +67,12 @@ while True:
     pose.theta += delta_theta
     
     # update values for next iteration
-    start_time = current_time
     prev_count_left = curr_count_left
     prev_count_right = curr_count_right
     
-    print(f"{pose.x: 5.1f} cm, {pose.y: 5.1f} cm, {pose.theta / math.pi * 180.0 : 5.1f} deg")
+    # print only every second.
+    current_time = time.time_ns()
+    elapsed_time = current_time - prev_time
+    if (elapsed_time / 1000000.0 > 1000):
+        print(f"{pose.x: 5.1f} cm, {pose.y: 5.1f} cm, {pose.theta / math.pi * 180.0 : 5.1f} deg")
+        prev_time = current_time
