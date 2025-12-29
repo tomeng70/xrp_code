@@ -34,7 +34,7 @@ wheel_circumference = 2.0 * math.pi * wheel_radius
 
 # correction constants
 KP_DIST = 1
-KP_ANGLE = 2
+KP_ANGLE = 2.75
 
 def getCurrentPose(myOtos):
     position = myOtos.getPosition()
@@ -104,19 +104,26 @@ def apply_correction(offset):
     # express the angular error as a ratio.
     error_angle = math.atan2(math.sin(offset_angle), math.cos(offset_angle))
     
-# TODO: distance correction is washing out heading correction.  need to fix this.
-#     
     # calculate the correction velocity.
     if (dist_to_tgt > 8):
-        error_vel = 40
-    elif (dist_to_tgt > 4):
-        error_vel = 30
-    else:
         error_vel = 20
+    elif (dist_to_tgt > 4):
+        error_vel = 10
+    else:
+        error_vel = 5
+        
+    # slow (scale) down the distance correction if robot is not pointed at target
+    heading_scale = max(0.0, math.fabs(math.cos(error_angle)))
+    vel_B = error_vel * heading_scale
         
     # calculate desired rotational and linear velocities of the robot.
     omega = KP_ANGLE * error_angle
-    vel_B = KP_DIST * error_vel
+    
+    # turn only if the heading error is large enough.
+    if error_angle > 25:
+        vel_B = 0
+    else:
+        vel_B = KP_DIST * error_vel
     
     # convert to input motor velocities (angular).
     theta_dot_L = vel_B / wheel_radius - wheel_spacing / (2.0 * wheel_radius) * omega
@@ -127,12 +134,14 @@ def apply_correction(offset):
     theta_dot_L_rpm = theta_dot_L * RAD_S_TO_RPM
     theta_dot_R_rpm = theta_dot_R * RAD_S_TO_RPM
 
-    MAX_RPM = 80  # pick something reasonable (try 40–120)
+    MAX_RPM = 60  # pick something reasonable (try 40–120)
     theta_dot_L_rpm = max(-MAX_RPM, min(MAX_RPM, theta_dot_L_rpm))
     theta_dot_R_rpm = max(-MAX_RPM, min(MAX_RPM, theta_dot_R_rpm))
         
     # print("theta_dot_R_rpm: {}".format(theta_dot_R_rpm))
     # print("theta_dot_L_rpm: {}".format(theta_dot_L_rpm))
+    # print("vel_B: {}".format(vel_B))
+    # print("omega: {}".format(omega))
     
     # apply correction.
     motor_left.set_speed(theta_dot_L_rpm)
@@ -181,7 +190,7 @@ def run():
     # Main loop
 
     # test target position
-    targetPosition = qwiic_otos.Pose2D(12, 0, 0)
+    targetPosition = qwiic_otos.Pose2D(36, 0, 0)
 
     # wait until button pressed.
     # wait for button press.
