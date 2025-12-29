@@ -120,7 +120,7 @@ def apply_correction(offset):
     omega = KP_ANGLE * error_angle
     
     # turn only if the heading error is large enough.
-    if error_angle > 25:
+    if error_angle > math.radians(25):
         vel_B = 0
     else:
         vel_B = KP_DIST * error_vel
@@ -184,6 +184,11 @@ def run():
     # but can also be used to recover from some rare tracking errors
     myOtos.resetTracking()
     
+    # wait a moment to let sensor settle down.
+    print("waiting a moment...")
+    time.sleep(3)
+    print("done waiting!")
+    
     currentPosition = qwiic_otos.Pose2D(0, 0, 0)
     myOtos.setPosition(currentPosition)
 
@@ -197,11 +202,11 @@ def run():
     print("Flashing LED")
     board.led_blink(6)
 
-    # Wait for user to press button
-    print("Press user button to begin")
-    board.wait_for_button()
-    print("Running program...")
-    board.led_blink(2)
+    # # Wait for user to press button
+    # print("Press user button to begin")
+    # board.wait_for_button()
+    # print("Running program...")
+    # board.led_blink(2)
 
     prev_time = time.time()
     while True:
